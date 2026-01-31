@@ -1,52 +1,62 @@
 function productCardTemplate(product) {
   return `<li class="product-card">
-    <a href="product_pages/?product=">
-      <img src="" alt="Image of ">
-      <h2 class="card__brand"></h2>
-      <h3 class="card__name"></h3>
-      <p class="product-card__price">$</p>
+    <a href="product_pages/?product=${product.Id}">
+      <img src="${product.Image}" alt="Image of ${product.Name}">
+      <h2 class="card__brand">${product.Brand?.Name || ""}</h2>
+      <h3 class="card__name">${product.NameWithoutBrand}</h3>
+      <p class="product-card__price">$${product.FinalPrice}</p>
     </a>
   </li>`;
 }
 
 export default class ProductList {
   constructor(category, dataSource, listElement) {
-    //Productlist module constructor
     this.category = category;
     this.dataSource = dataSource;
     this.listElement = listElement;
+    this.allProducts = [];
   }
 
   async init() {
-    //Initialize the product list
     const list = await this.dataSource.getData();
+    this.allProducts = list;
     this.renderList(list);
   }
 
   renderList(list) {
-    // const htmlStrings = list.map(productCardTemplate);
-    // this.listElement.insertAdjacentHTML("afterbegin", htmlStrings.join(""));
-
-    // apply use new utility function instead of the commented code above
-    renderListWithTemplate(productCardTemplate, this.listElement, list);
+    this.listElement.innerHTML = "";
+    const htmlStrings = list.map(productCardTemplate);
+    this.listElement.insertAdjacentHTML("afterbegin", htmlStrings.join(""));
   }
+
   searchProducts(searchTerm) {
-    const filtered = this.allProducts.filter((item) =>
-      item.Name.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
+    if (!searchTerm.trim()) {
+      this.renderList(this.allProducts);
+      return;
+    }
+
+    const filtered = this.allProducts.filter((item) => {
+      const name = item.Name?.toLowerCase() || "";
+      const brand = item.Brand?.Name?.toLowerCase() || "";
+      const description = item.DescriptionHtmlSimple?.toLowerCase() || "";
+      const search = searchTerm.toLowerCase();
+
+      return (
+        name.includes(search) ||
+        brand.includes(search) ||
+        description.includes(search)
+      );
+    });
 
     this.renderList(filtered);
-  }
-
-  async init() {
-    const list = await this.dataSource.getData();
-    this.allProducts = list; // ⭐ Save all products for searching
-    this.renderList(list);
   }
 }
 
 export function initProductSearch(productList) {
-  document.querySelector("#searchInput").addEventListener("input", (e) => {
-    productList.searchProducts(e.target.value);
-  });
+  const searchInput = document.querySelector("#searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      productList.searchProducts(e.target.value);
+    });
+  }
 }
